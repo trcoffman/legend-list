@@ -10,7 +10,7 @@ import { useOnLayoutSync } from "@/hooks/useOnLayoutSync";
 import { Platform } from "@/platform/Platform";
 import { ContextContainer, type ContextContainerType } from "@/state/ContextContainer";
 import { useArr$, useStateContext } from "@/state/state";
-import { type GetRenderedItem, type StickyHeaderConfig, typedMemo } from "@/types";
+import { type GetRenderedItem, type StickyHeaderConfig, typedMemo } from "@/types.base";
 import { isNullOrUndefined, roundSize } from "@/utils/helpers";
 
 // biome-ignore lint/nursery/noShadow: const function name shadowing is intentional
