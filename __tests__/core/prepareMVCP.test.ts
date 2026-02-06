@@ -186,8 +186,8 @@ describe("prepareMVCP", () => {
         it("should skip anchors excluded by shouldRestorePosition on dataChanged", () => {
             mockState.props.maintainVisibleContentPosition = normalizeMaintainVisibleContentPosition({
                 data: true,
-                size: false,
                 shouldRestorePosition: (item) => item.id !== 1,
+                size: false,
             });
 
             const adjustFunction = expectAdjustFunction(prepareMVCP(mockCtx, true));

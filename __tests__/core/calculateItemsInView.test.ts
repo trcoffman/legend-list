@@ -306,7 +306,7 @@ describe("calculateItemsInView", () => {
 
         it("keeps top and bottom ranges mounted across scroll", () => {
             setupList(60, 10);
-            const alwaysRender = { top: 2, bottom: 2 };
+            const alwaysRender = { bottom: 2, top: 2 };
             mockState.props.alwaysRender = alwaysRender;
             const indices = getAlwaysRenderIndices(alwaysRender, mockState.props.data, mockState.props.keyExtractor);
             mockState.props.alwaysRenderIndicesArr = indices;
