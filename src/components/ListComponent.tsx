@@ -1,6 +1,5 @@
 import * as React from "react";
-import { useLayoutEffect } from "react";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import type {
     Animated,
     LayoutChangeEvent,

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { Dimensions, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useMemo, useState } from "react";
+import { BlurView } from "expo-blur";
+import { Button, type LayoutChangeEvent, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { LegendList } from "@legendapp/list";
-import { useHeaderHeight } from "@react-navigation/elements";
+import { KeyboardAvoidingLegendList } from "@legendapp/list/keyboard";
 
 type Message = {
     id: string;
@@ -17,9 +18,95 @@ let idCounter = 0;
 
 const AIChat = () => {
     const [messages, setMessages] = useState<Message[]>([]);
-    const headerHeight = Platform.OS === "ios" ? useHeaderHeight() : 80;
-    const screenHeight = Dimensions.get("window").height;
-    const availableHeight = screenHeight - headerHeight; // Subtract header and some padding
+    const [inputText, setInputText] = useState("");
+    const [inputHeight, setInputHeight] = useState(0);
+    const insets = useSafeAreaInsets();
+
+    const handleInputLayout = (event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout;
+        setInputHeight(height);
+    };
+
+    const contentContainerStyle = useMemo(
+        () => [styles.contentContainer, { paddingBottom: inputHeight }],
+        [inputHeight],
+    );
+
+    const inputContainerStyle = useMemo(
+        () => [styles.inputContainer, { paddingBottom: insets.bottom + 10, marginTop: -inputHeight }],
+        [inputHeight, insets.bottom],
+    );
+
+    const sendMessage = () => {
+        const text = inputText.trim();
+        if (text) {
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                {
+                    id: String(idCounter++),
+                    sender: "user",
+                    text: text,
+                    timeStamp: Date.now(),
+                },
+            ]);
+            setInputText("");
+            // Simulate AI response
+            simulateAIResponse(text);
+        }
+    };
+
+    const simulateAIResponse = (userMessage: string) => {
+        // Add placeholder
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+                id: String(idCounter++),
+                isPlaceholder: true,
+                sender: "system",
+                text: "",
+                timeStamp: Date.now(),
+            },
+        ]);
+
+        // Simulate AI thinking time
+        setTimeout(() => {
+            const responseText = `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.`;
+            const words = responseText.split(" ");
+            let currentWordIndex = 0;
+
+            // Replace placeholder with empty system message
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.isPlaceholder
+                        ? {
+                              id: String(idCounter++),
+                              isPlaceholder: false,
+                              sender: "system",
+                              text: "",
+                              timeStamp: Date.now(),
+                          }
+                        : msg,
+                ),
+            );
+
+            // Stream words
+            const streamInterval = setInterval(() => {
+                if (currentWordIndex < words.length) {
+                    const currentText = words.slice(0, currentWordIndex + 1).join(" ");
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg) =>
+                            msg.sender === "system" && !msg.isPlaceholder && msg.text !== responseText
+                                ? { ...msg, text: currentText }
+                                : msg,
+                        ),
+                    );
+                    currentWordIndex++;
+                } else {
+                    clearInterval(streamInterval);
+                }
+            }, 50);
+        }, 1000);
+    };
 
     useEffect(() => {
         // After 1 second, add user message and system placeholder
@@ -106,72 +193,86 @@ This makes it possible to scroll through thousands of items without performance 
     }, []);
 
     return (
-        <SafeAreaView edges={["bottom"]} style={styles.container}>
-            <KeyboardAvoidingView
-                behavior="padding"
-                contentContainerStyle={{ flex: 1 }}
-                keyboardVerticalOffset={headerHeight}
-                style={styles.container}
-            >
-                <LegendList
-                    // alignItemsAtEnd
-                    contentContainerStyle={styles.contentContainer}
-                    data={messages}
-                    estimatedItemSize={60}
-                    keyExtractor={(item) => item.id}
-                    // maintainScrollAtEnd
-                    maintainVisibleContentPosition
-                    renderItem={({ item }) => (
-                        <>
-                            {item.isPlaceholder ? (
-                                <View
-                                    style={[
-                                        styles.systemMessageContainer,
-                                        styles.systemStyle,
-                                        { minHeight: availableHeight * 0.9 }, // Take up most of available space
-                                    ]}
-                                >
-                                    <View style={[styles.placeholderContainer, styles.messageContainer]}>
-                                        <View style={styles.typingIndicator}>
-                                            <View style={[styles.dot, styles.dot1]} />
-                                            <View style={[styles.dot, styles.dot2]} />
-                                            <View style={[styles.dot, styles.dot3]} />
+        <KeyboardProvider>
+            <View style={[styles.container, { paddingBottom: 0, paddingTop: insets.top }]}>
+                <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
+                    {inputHeight !== 0 && (
+                        <KeyboardAvoidingLegendList
+                            contentContainerStyle={contentContainerStyle}
+                            data={messages}
+                            estimatedItemSize={60}
+                            initialScrollAtEnd
+                            keyExtractor={(item) => item.id}
+                            maintainScrollAtEnd
+                            maintainVisibleContentPosition
+                            safeAreaInsetBottom={insets.bottom}
+                            style={styles.list}
+                            renderItem={({ item }) => (
+                                <>
+                                    {item.isPlaceholder ? (
+                                        <View style={[styles.systemMessageContainer, styles.systemStyle]}>
+                                            <View style={[styles.placeholderContainer, styles.messageContainer]}>
+                                                <View style={styles.typingIndicator}>
+                                                    <View style={[styles.dot, styles.dot1]} />
+                                                    <View style={[styles.dot, styles.dot2]} />
+                                                    <View style={[styles.dot, styles.dot3]} />
+                                                </View>
+                                                <Text style={styles.placeholderText}>AI is thinking...</Text>
+                                            </View>
                                         </View>
-                                        <Text style={styles.placeholderText}>AI is thinking...</Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <View
-                                    style={[
-                                        styles.messageContainer,
-                                        item.sender === "system"
-                                            ? styles.systemMessageContainer
-                                            : styles.userMessageContainer,
-                                        item.sender === "system" ? styles.systemStyle : styles.userStyle,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[styles.messageText, item.sender === "user" && styles.userMessageText]}
-                                    >
-                                        {item.text}
-                                    </Text>
-                                    <View
-                                        style={[
-                                            styles.timeStamp,
-                                            item.sender === "system" ? styles.systemStyle : styles.userStyle,
-                                        ]}
-                                    >
-                                        <Text style={styles.timeStampText}>
-                                            {new Date(item.timeStamp).toLocaleTimeString()}
-                                        </Text>
-                                    </View>
-                                </View>
+                                    ) : (
+                                        <View
+                                            style={[
+                                                styles.messageContainer,
+                                                item.sender === "system"
+                                                    ? styles.systemMessageContainer
+                                                    : styles.userMessageContainer,
+                                                item.sender === "system" ? styles.systemStyle : styles.userStyle,
+                                            ]}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.messageText,
+                                                    item.sender === "user" && styles.userMessageText,
+                                                ]}
+                                            >
+                                                {item.text}
+                                            </Text>
+                                            <View
+                                                style={[
+                                                    styles.timeStamp,
+                                                    item.sender === "system" ? styles.systemStyle : styles.userStyle,
+                                                ]}
+                                            >
+                                                <Text style={styles.timeStampText}>
+                                                    {new Date(item.timeStamp).toLocaleTimeString()}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </>
                             )}
-                        </>
+                        />
                     )}
-                />
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                </KeyboardGestureArea>
+                <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+                    <BlurView
+                        experimentalBlurMethod="dimezisBlurView"
+                        style={inputContainerStyle}
+                        onLayout={handleInputLayout}
+                    >
+                        <TextInput
+                            onChangeText={setInputText}
+                            placeholder="Type a message"
+                            style={styles.input}
+                            value={inputText}
+                            multiline
+                        />
+                        <Button onPress={sendMessage} title="Send" />
+                    </BlurView>
+                </KeyboardStickyView>
+            </View>
+        </KeyboardProvider>
     );
 };
 
@@ -182,6 +283,28 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         paddingHorizontal: 16,
+        // paddingBottom is set dynamically based on input height
+    },
+    input: {
+        backgroundColor: "white",
+        borderColor: "#ccc",
+        borderRadius: 5,
+        borderWidth: 1,
+        flex: 1,
+        marginRight: 10,
+        padding: 10,
+    },
+    inputContainer: {
+        alignItems: "center",
+        backgroundColor: "transparent",
+        borderColor: "#ccc",
+        borderTopWidth: 1,
+        flexDirection: "row",
+        padding: 10,
+        // marginTop is set dynamically based on input height
+    },
+    list: {
+        flex: 1,
     },
     dot: {
         backgroundColor: "#007AFF",
