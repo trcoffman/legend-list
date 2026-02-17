@@ -104,7 +104,7 @@ const AIChat = () => {
                 } else {
                     clearInterval(streamInterval);
                 }
-            }, 50);
+            }, 3);
         }, 1000);
     };
 
@@ -183,7 +183,7 @@ This makes it possible to scroll through thousands of items without performance 
                 } else {
                     clearInterval(streamInterval);
                 }
-            }, 50); // Stream one word every 16ms
+            }, 1); // Stream one word every 16ms
         }, 1500);
 
         return () => {
@@ -198,12 +198,12 @@ This makes it possible to scroll through thousands of items without performance 
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     {inputHeight !== 0 && (
                         <KeyboardAvoidingLegendList
+                            alignItemsAtEnd
                             contentContainerStyle={contentContainerStyle}
                             data={messages}
                             estimatedItemSize={60}
                             initialScrollAtEnd
                             keyExtractor={(item) => item.id}
-                            maintainScrollAtEnd
                             maintainVisibleContentPosition
                             safeAreaInsetBottom={insets.bottom}
                             style={styles.list}
