@@ -246,8 +246,11 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const handleItemSizeChange = useCallback(
         (info: { size: number; previous: number; index: number; itemKey: string; itemData: ItemT }) => {
             // Recalculate if changed item is at or after topItemIndex
+            // Use requestAnimationFrame to let the layout settle before updating inset
             if (topItemIndex !== undefined && info.index >= topItemIndex) {
-                calculateTopItemInset();
+                requestAnimationFrame(() => {
+                    calculateTopItemInset();
+                });
             }
         },
         [topItemIndex, calculateTopItemInset],
@@ -263,9 +266,12 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     }, [topItemIndex, calculateTopItemInset]);
 
     // Recalculate topItemInset when data length changes
+    // Use requestAnimationFrame to let the new content render first
     useEffect(() => {
         if (topItemIndex !== undefined) {
-            calculateTopItemInset();
+            requestAnimationFrame(() => {
+                calculateTopItemInset();
+            });
         }
     }, [props.data?.length, topItemIndex, calculateTopItemInset]);
 

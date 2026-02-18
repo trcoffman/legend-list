@@ -107,7 +107,7 @@ const ChatKeyboard = () => {
                         timeStamp: Date.now(),
                     },
                 ]);
-            }, 3000);
+            }, 5000);
         }
     };
 
