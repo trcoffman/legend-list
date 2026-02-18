@@ -198,7 +198,7 @@ This makes it possible to scroll through thousands of items without performance 
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     {inputHeight !== 0 && (
                         <KeyboardAvoidingLegendList
-                            alignItemsAtEnd
+                            avoidKeyboard
                             contentContainerStyle={contentContainerStyle}
                             data={messages}
                             estimatedItemSize={60}
