@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, type LayoutChangeEvent, StyleSheet, Text, TextInput, View } from "react-native";
+import { Button, type LayoutChangeEvent, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -215,6 +215,7 @@ This makes it possible to scroll through thousands of items without performance 
                             data={messages}
                             initialScrollAtEnd
                             keyExtractor={(item, index) => `item-${index}`}
+                            maintainScrollAtEnd={Platform.OS === "web"}
                             maintainVisibleContentPosition
                             topItemIndex={topItemIndex}
                             renderItem={({ item }) => (
