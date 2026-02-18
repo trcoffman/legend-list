@@ -125,7 +125,7 @@ const ChatKeyboard = () => {
                         data={messages}
                         estimatedItemSize={80}
                         initialScrollAtEnd
-                        keyExtractor={(item, index) => index}
+                        keyExtractor={(item, index) => `item-${index}`}
                         maintainVisibleContentPosition
                         ref={listRef}
                         renderItem={ChatMessage}

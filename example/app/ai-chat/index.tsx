@@ -30,13 +30,10 @@ const AIChat = () => {
         setInputHeight(height);
     };
 
-    const contentContainerStyle = useMemo(
-        () => [styles.contentContainer, { paddingBottom: inputHeight }],
-        [inputHeight],
-    );
+    const contentContainerStyle = useMemo(() => [styles.contentContainer], [inputHeight]);
 
     const inputContainerStyle = useMemo(
-        () => [styles.inputContainer, { marginTop: -inputHeight, paddingBottom: insets.bottom + 10 }],
+        () => [styles.inputContainer, { paddingBottom: insets.bottom + 10 }],
         [inputHeight, insets.bottom],
     );
 
@@ -345,6 +342,7 @@ const styles = StyleSheet.create({
     },
     list: {
         flex: 1,
+        overflow: "visible",
     },
     messageContainer: {
         borderRadius: 16,

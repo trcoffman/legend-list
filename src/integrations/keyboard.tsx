@@ -557,7 +557,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
               }),
               [styleProp, keyboardInset],
           )
-        : undefined;
+        : styleProp;
 
     const contentContainerStyle = useMemo(() => {
         const styles: any[] = [];
