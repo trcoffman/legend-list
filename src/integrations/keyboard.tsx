@@ -26,6 +26,7 @@ type KeyboardControllerLegendListProps<ItemT> = Omit<
     contentInset?: Insets | undefined;
     safeAreaInsetBottom?: number;
     avoidKeyboard?: boolean;
+    topItemIndex?: number;
 };
 
 const clampProgress = (progress: number) => {
@@ -197,7 +198,6 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             if (!state) {
                 return;
             }
-            console.log("positions ", JSON.stringify([...state.positions.entries()]));
         },
         [],
     );
