@@ -30,7 +30,7 @@ const AIChat = () => {
         setInputHeight(height);
     };
 
-    const contentContainerStyle = useMemo(() => [styles.contentContainer], [inputHeight]);
+    const contentContainerStyle = useMemo(() => styles.contentContainer, [inputHeight]);
 
     const inputContainerStyle = useMemo(
         () => [styles.inputContainer, { paddingBottom: insets.bottom + 10 }],
