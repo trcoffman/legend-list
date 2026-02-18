@@ -98,16 +98,20 @@ const ChatKeyboard = () => {
             // }, 800);
 
             setTimeout(() => {
+                const isLongReply = Math.random() > 0.5;
+                const shortReply = `Got it! Thanks for asking about "${text}".`;
+                const longReply = `Thank you for your message! I've received your inquiry about "${text}" and I'm happy to help you with this. Let me provide you with a comprehensive response that covers all the relevant details.\n\nFirst, I want to make sure I understand your question correctly. Based on what you've shared, it seems like you're looking for detailed information and guidance.\n\nHere are some key points to consider:\n\n1. We offer a wide range of solutions tailored to your specific needs and requirements.\n\n2. Our team of experts is available 24/7 to assist you with any questions or concerns you may have.\n\n3. We pride ourselves on delivering exceptional customer service and support.\n\n4. Our products and services are designed with quality and reliability in mind.\n\n5. We continuously improve our offerings based on customer feedback.\n\nI'll do my best to address all aspects of your question and provide helpful suggestions. Please let me know if you need any clarification or have follow-up questions!\n\nAdditionally, I'd like to mention that we have several resources available that might be helpful for you. Our documentation is comprehensive and covers most common use cases. We also have a community forum where you can connect with other users and share experiences.\n\nIs there anything specific you'd like me to elaborate on?`;
+
                 setMessages((messagesNew) => [
                     ...messagesNew,
                     {
                         id: String(idCounter++),
                         sender: "bot",
-                        text: `Thank you for your message! I've received your inquiry about "${text}" and I'm happy to help you with this. Let me provide you with a comprehensive response that covers all the relevant details.\n\nFirst, I want to make sure I understand your question correctly. Based on what you've shared, it seems like you're looking for detailed information and guidance.\n\nHere are some key points to consider:\n\n1. We offer a wide range of solutions tailored to your specific needs and requirements.\n\n2. Our team of experts is available 24/7 to assist you with any questions or concerns you may have.\n\n3. We pride ourselves on delivering exceptional customer service and support.\n\n4. Our products and services are designed with quality and reliability in mind.\n\n5. We continuously improve our offerings based on customer feedback.\n\nI'll do my best to address all aspects of your question and provide helpful suggestions. Please let me know if you need any clarification or have follow-up questions!\n\nAdditionally, I'd like to mention that we have several resources available that might be helpful for you. Our documentation is comprehensive and covers most common use cases. We also have a community forum where you can connect with other users and share experiences.\n\nIs there anything specific you'd like me to elaborate on?`,
+                        text: isLongReply ? longReply : shortReply,
                         timeStamp: Date.now(),
                     },
                 ]);
-            }, 5000);
+            }, 1000);
         }
     };
 

@@ -1,9 +1,10 @@
 import { BlurView } from "expo-blur";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, type LayoutChangeEvent, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type { LegendListRef } from "@legendapp/list";
 import { KeyboardAvoidingLegendList } from "@legendapp/list/keyboard";
 
 type Message = {
@@ -20,6 +21,8 @@ const AIChat = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [inputHeight, setInputHeight] = useState(0);
+    const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const listRef = useRef<LegendListRef>(null);
     const insets = useSafeAreaInsets();
 
     const handleInputLayout = (event: LayoutChangeEvent) => {
@@ -40,6 +43,10 @@ const AIChat = () => {
     const sendMessage = () => {
         const text = inputText.trim();
         if (text) {
+            // Set topItemIndex to the user's message index
+            const userMessageIndex = messages.length;
+            setTopItemIndex(userMessageIndex);
+
             setMessages((prevMessages) => [
                 ...prevMessages,
                 {
@@ -50,17 +57,28 @@ const AIChat = () => {
                 },
             ]);
             setInputText("");
+
+            // Scroll to end after the message is added
+            setTimeout(() => {
+                listRef.current?.scrollToEnd({ animated: true });
+            }, 200);
+
             // Simulate AI response
-            simulateAIResponse(text);
+            setTimeout(() => {
+                simulateAIResponse(text);
+            }, 4000);
         }
     };
 
     const simulateAIResponse = (userMessage: string) => {
+        // Generate a unique ID for this AI response
+        const aiMessageId = String(idCounter++);
+
         // Add placeholder
         setMessages((prevMessages) => [
             ...prevMessages,
             {
-                id: String(idCounter++),
+                id: aiMessageId,
                 isPlaceholder: true,
                 sender: "system",
                 text: "",
@@ -70,45 +88,45 @@ const AIChat = () => {
 
         // Simulate AI thinking time
         setTimeout(() => {
-            const responseText = `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.`;
+            const isLongReply = Math.random() > 0.5;
+            const shortReply = `Got it! You said: "${userMessage}". How can I help further?`;
+            const longReply = `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question\n2. Second important consideration\n3. Third aspect to keep in mind\n\nIs there anything else you'd like to know?`;
+            const responseText = isLongReply ? longReply : shortReply;
             const words = responseText.split(" ");
             let currentWordIndex = 0;
 
-            // Replace placeholder with empty system message
+            // Replace placeholder with empty system message (keep same ID)
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
-                    msg.isPlaceholder
+                    msg.id === aiMessageId
                         ? {
-                              id: String(idCounter++),
+                              ...msg,
                               isPlaceholder: false,
-                              sender: "system",
                               text: "",
-                              timeStamp: Date.now(),
                           }
                         : msg,
                 ),
             );
 
-            // Stream words
+            // Stream words - only update the message with matching ID
             const streamInterval = setInterval(() => {
                 if (currentWordIndex < words.length) {
                     const currentText = words.slice(0, currentWordIndex + 1).join(" ");
                     setMessages((prevMessages) =>
-                        prevMessages.map((msg) =>
-                            msg.sender === "system" && !msg.isPlaceholder && msg.text !== responseText
-                                ? { ...msg, text: currentText }
-                                : msg,
-                        ),
+                        prevMessages.map((msg) => (msg.id === aiMessageId ? { ...msg, text: currentText } : msg)),
                     );
                     currentWordIndex++;
                 } else {
                     clearInterval(streamInterval);
                 }
-            }, 3);
+            }, 30);
         }, 1000);
     };
 
     useEffect(() => {
+        // Generate IDs for initial messages
+        const initialAiMessageId = String(idCounter++);
+
         // After 1 second, add user message and system placeholder
         const timer1 = setTimeout(() => {
             setMessages([
@@ -119,7 +137,7 @@ const AIChat = () => {
                     timeStamp: Date.now(),
                 },
                 {
-                    id: String(idCounter++),
+                    id: initialAiMessageId,
                     isPlaceholder: true,
                     sender: "system",
                     text: "",
@@ -153,37 +171,33 @@ This makes it possible to scroll through thousands of items without performance 
         let currentWordIndex = 0;
 
         const timer2 = setTimeout(() => {
-            // Replace placeholder with empty system message
+            // Replace placeholder with empty system message (keep same ID)
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
-                    msg.isPlaceholder
+                    msg.id === initialAiMessageId
                         ? {
-                              id: String(idCounter++),
+                              ...msg,
                               isPlaceholder: false,
-                              sender: "system",
                               text: "",
-                              timeStamp: Date.now(),
                           }
                         : msg,
                 ),
             );
 
-            // Start streaming words
+            // Start streaming words - only update the message with matching ID
             const streamInterval = setInterval(() => {
                 if (currentWordIndex < words.length) {
                     const currentText = words.slice(0, currentWordIndex + 1).join(" ");
                     setMessages((prevMessages) =>
                         prevMessages.map((msg) =>
-                            msg.sender === "system" && !msg.isPlaceholder && msg.text !== fullText
-                                ? { ...msg, text: currentText }
-                                : msg,
+                            msg.id === initialAiMessageId ? { ...msg, text: currentText } : msg,
                         ),
                     );
                     currentWordIndex++;
                 } else {
                     clearInterval(streamInterval);
                 }
-            }, 1); // Stream one word every 16ms
+            }, 1);
         }, 1500);
 
         return () => {
@@ -198,12 +212,14 @@ This makes it possible to scroll through thousands of items without performance 
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     {inputHeight !== 0 && (
                         <KeyboardAvoidingLegendList
+                            ref={listRef}
                             avoidKeyboard
                             contentContainerStyle={contentContainerStyle}
                             data={messages}
                             initialScrollAtEnd
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item, index) => `item-${index}`}
                             maintainVisibleContentPosition
+                            topItemIndex={topItemIndex}
                             renderItem={({ item }) => (
                                 <>
                                     {item.isPlaceholder ? (
