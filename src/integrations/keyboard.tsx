@@ -87,7 +87,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         ...rest
     } = props;
 
-    const { alignItemsAtEnd, avoidKeyboard: avoidKeyboardProp } = props;
+    const { alignItemsAtEnd, avoidKeyboard: avoidKeyboardProp, topItemIndex } = props;
 
     const avoidKeyboard = !!(avoidKeyboardProp || alignItemsAtEnd);
 
@@ -112,6 +112,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     // Track keyboard open state to ignore spurious iOS keyboard events
     const isKeyboardOpen = useSharedValue(false);
     const keyboardInsetRef = useRef(0);
+    const topItemInset = useSharedValue(0);
     const [avoidKeyboardMinSize, setAlignItemsAtEndMinSize] = useState<number | undefined>(undefined);
 
     const scrollHandler = useAnimatedScrollHandler(
@@ -174,6 +175,52 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         [avoidKeyboard, clearAlignItemsAtEndMinSize, horizontal],
     );
 
+    const calculateTopItemInset = useCallback(() => {
+        // Skip if topItemIndex not provided or invalid
+        if (topItemIndex === undefined || topItemIndex < 0) {
+            if (topItemInset.get() !== 0) {
+                topItemInset.set(0);
+            }
+            return;
+        }
+
+        const state = refLegendList.current?.getState();
+        if (!state) {
+            return;
+        }
+
+        const dataLength = state.data.length;
+        const vScrollLength = state.scrollLength;
+
+        // Handle out of bounds
+        if (topItemIndex >= dataLength || vScrollLength <= 0) {
+            if (topItemInset.get() !== 0) {
+                topItemInset.set(0);
+            }
+            return;
+        }
+
+        // Sum sizes from topItemIndex to end
+        let sumOfSizes = 0;
+        for (let i = topItemIndex; i < dataLength; i++) {
+            const size = state.sizeAtIndex(i);
+            if (size !== undefined && size > 0) {
+                sumOfSizes += size;
+            }
+            // Note: If size is undefined, item hasn't been measured yet
+            // We skip it - once measured, onItemSizeChanged will trigger recalc
+        }
+
+        const newTopItemInset = Math.max(0, vScrollLength - sumOfSizes);
+
+        if (topItemInset.get() !== newTopItemInset) {
+            topItemInset.set(newTopItemInset);
+            // Report combined inset to LegendList
+            const vKeyboardInset = keyboardInset.get();
+            reportContentInset(vKeyboardInset + newTopItemInset);
+        }
+    }, [topItemIndex, topItemInset, keyboardInset, reportContentInset]);
+
     const updateScrollMetrics = useCallback(() => {
         const state = refLegendList.current?.getState();
         if (!state) {
@@ -187,24 +234,39 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const handleMetricsChange = useCallback(
         (metrics: LegendListMetrics) => {
             updateScrollMetrics();
+            if (topItemIndex !== undefined) {
+                calculateTopItemInset();
+            }
             onMetricsChangeProp?.(metrics);
         },
-        [onMetricsChangeProp, updateScrollMetrics],
+        [onMetricsChangeProp, updateScrollMetrics, topItemIndex, calculateTopItemInset],
     );
 
     const handleItemSizeChange = useCallback(
         (info: { size: number; previous: number; index: number; itemKey: string; itemData: ItemT }) => {
-            const state = refLegendList.current?.getState();
-            if (!state) {
-                return;
+            // Recalculate if changed item is at or after topItemIndex
+            if (topItemIndex !== undefined && info.index >= topItemIndex) {
+                calculateTopItemInset();
             }
         },
-        [],
+        [topItemIndex, calculateTopItemInset],
     );
 
     useEffect(() => {
         updateAlignItemsAtEndMinSize();
     }, [updateAlignItemsAtEndMinSize]);
+
+    // Recalculate topItemInset when topItemIndex changes
+    useEffect(() => {
+        calculateTopItemInset();
+    }, [topItemIndex, calculateTopItemInset]);
+
+    // Recalculate topItemInset when data length changes
+    useEffect(() => {
+        if (topItemIndex !== undefined) {
+            calculateTopItemInset();
+        }
+    }, [props.data?.length, topItemIndex, calculateTopItemInset]);
 
     useKeyboardHandler(
         // biome-ignore assist/source/useSortedKeys: prefer start/move/end
@@ -388,7 +450,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                         const newInset = calculateKeyboardInset(event.height, safeAreaInsetBottom);
                         keyboardInset.set(newInset);
 
-                        runOnJS(reportContentInset)(newInset);
+                        runOnJS(reportContentInset)(newInset + topItemInset.get());
 
                         if (!vIsOpening) {
                             runOnJS(updateAlignItemsAtEndMinSize)(newInset);
@@ -423,9 +485,11 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
 
         if (isIos) {
             const keyboardInsetBottom = keyboardInset.get();
+            const vTopItemInset = topItemInset.get();
+            const totalInsetBottom = keyboardInsetBottom + vTopItemInset;
 
             const contentInset = {
-                bottom: (contentInsetProp?.bottom ?? 0) + (horizontal ? 0 : keyboardInsetBottom),
+                bottom: (contentInsetProp?.bottom ?? 0) + (horizontal ? 0 : totalInsetBottom),
                 left: contentInsetProp?.left ?? 0,
                 right: contentInsetProp?.right ?? 0,
                 top: contentInsetProp?.top ?? 0,
@@ -445,9 +509,9 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         ? useAnimatedStyle(
               () => ({
                   ...(styleFlattened || {}),
-                  marginBottom: keyboardInset.get(),
+                  marginBottom: keyboardInset.get() + topItemInset.get(),
               }),
-              [styleProp, keyboardInset],
+              [styleProp, keyboardInset, topItemInset],
           )
         : undefined;
 
@@ -467,8 +531,8 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             automaticallyAdjustContentInsets={false}
             contentContainerStyle={contentContainerStyle}
             keyboardDismissMode="interactive"
-            onMetricsChange={handleMetricsChange}
             onItemSizeChanged={handleItemSizeChange}
+            onMetricsChange={handleMetricsChange}
             onScroll={scrollHandler as unknown as AnimatedLegendListProps<ItemT>["onScroll"]}
             ref={combinedRef}
             refScrollView={scrollViewRef}

@@ -153,6 +153,7 @@ const ChatKeyboard = () => {
             <View style={[styles.container, { paddingBottom: insets.bottom, paddingTop: insets.top }]}>
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     <KeyboardAvoidingLegendList
+                        topItemIndex={messages.length - 2}
                         alignItemsAtEnd
                         contentContainerStyle={styles.contentContainer}
                         data={messages}
