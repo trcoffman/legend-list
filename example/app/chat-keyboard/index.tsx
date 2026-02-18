@@ -13,95 +13,36 @@ type Message = {
     timeStamp: number;
 };
 
-let idCounter = 0;
 const MS_PER_SECOND = 1000;
 
-const defaultChatMessages: Message[] = [
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "Hi, I have a question about your product",
-        timeStamp: Date.now() - MS_PER_SECOND * 5,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "Hello there! How can I assist you today?",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "I'm looking for information about pricing plans",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "We offer several pricing tiers based on your needs",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "Our basic plan starts at $9.99 per month",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "Do you offer any discounts for annual billing?",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "Yes! You can save 20% with our annual billing option",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "That sounds great. What features are included?",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "The basic plan includes all core features plus 10GB storage",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "Premium plans include priority support and additional tools",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "I think the basic plan would work for my needs",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "Perfect! I can help you get set up with that",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "user",
-        text: "Thanks for your help so far",
-        timeStamp: Date.now() - MS_PER_SECOND * 4,
-    },
-    {
-        id: String(idCounter++),
-        sender: "bot",
-        text: "You're welcome! Is there anything else I can assist with today?",
-        timeStamp: Date.now() - MS_PER_SECOND * 3,
-    },
-];
+let idCounter = 0;
+
+const defaultChatMessages: Message[] = (
+    [
+        { sender: "user", text: "Hi, I have a question about your product" },
+        { sender: "bot", text: "Hello there! How can I assist you today?" },
+        { sender: "user", text: "I'm looking for information about pricing plans" },
+        { sender: "bot", text: "We offer several pricing tiers based on your needs" },
+        { sender: "bot", text: "Our basic plan starts at $9.99 per month" },
+        { sender: "user", text: "Do you offer any discounts for annual billing?" },
+        { sender: "bot", text: "Yes! You can save 20% with our annual billing option" },
+        { sender: "user", text: "That sounds great. What features are included?" },
+        { sender: "bot", text: "The basic plan includes all core features plus 10GB storage" },
+        { sender: "bot", text: "Premium plans include priority support and additional tools" },
+        { sender: "user", text: "I think the basic plan would work for my needs" },
+        { sender: "bot", text: "Perfect! I can help you get set up with that" },
+        { sender: "user", text: "Thanks for your help so far" },
+        { sender: "bot", text: "You're welcome! Is there anything else I can assist with today?" },
+    ] as const
+).map((msg, index) => ({
+    id: String(index),
+    sender: msg.sender,
+    text: msg.text,
+    timeStamp: Date.now() - MS_PER_SECOND * (14 - index),
+}));
+
+// Set idCounter to continue after default messages
+idCounter = defaultChatMessages.length;
 
 function ChatMessage({ item }: { item: Message }) {
     return (
@@ -126,6 +67,7 @@ const ChatKeyboard = () => {
     const [messages, setMessages] = useState<Message[]>(defaultChatMessages);
     const [inputText, setInputText] = useState("");
     const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const [maintainScrollAtEnd, setMaintainScrollAtEnd] = useState(true);
     const listRef = useRef<LegendListRef>(null);
     const insets = useSafeAreaInsets();
 
@@ -136,6 +78,9 @@ const ChatKeyboard = () => {
             const userMessageIndex = messages.length;
             setTopItemIndex(userMessageIndex);
 
+            // Disable maintainScrollAtEnd so we can do an animated scroll
+            setMaintainScrollAtEnd(false);
+
             setMessages((messagesNew) => [
                 ...messagesNew,
                 { id: String(idCounter++), sender: "user", text: text, timeStamp: Date.now() },
@@ -145,7 +90,12 @@ const ChatKeyboard = () => {
             // Scroll to end after the message is added
             setTimeout(() => {
                 listRef.current?.scrollToEnd({ animated: true });
-            }, 50);
+            }, 200);
+
+            // // Re-enable maintainScrollAtEnd after the scroll animation completes
+            // setTimeout(() => {
+            //     setMaintainScrollAtEnd(true);
+            // }, 800);
 
             setTimeout(() => {
                 setMessages((messagesNew) => [
@@ -172,7 +122,7 @@ const ChatKeyboard = () => {
                         estimatedItemSize={80}
                         initialScrollAtEnd
                         keyExtractor={(item) => item.id}
-                        maintainScrollAtEnd
+                        maintainScrollAtEnd={maintainScrollAtEnd}
                         maintainVisibleContentPosition
                         ref={listRef}
                         renderItem={ChatMessage}
