@@ -113,6 +113,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const isKeyboardOpen = useSharedValue(false);
     const keyboardInsetRef = useRef(0);
     const topItemInset = useSharedValue(0);
+    const [topItemInsetState, setTopItemInsetState] = useState(0);
     const [avoidKeyboardMinSize, setAlignItemsAtEndMinSize] = useState<number | undefined>(undefined);
 
     const scrollHandler = useAnimatedScrollHandler(
@@ -180,6 +181,9 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         if (topItemIndex === undefined || topItemIndex < 0) {
             if (topItemInset.get() !== 0) {
                 topItemInset.set(0);
+                if (isAndroid) {
+                    setTopItemInsetState(0);
+                }
             }
             return;
         }
@@ -196,6 +200,9 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         if (topItemIndex >= dataLength || vScrollLength <= 0) {
             if (topItemInset.get() !== 0) {
                 topItemInset.set(0);
+                if (isAndroid) {
+                    setTopItemInsetState(0);
+                }
             }
             return;
         }
@@ -215,10 +222,19 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
 
         if (topItemInset.get() !== newTopItemInset) {
             topItemInset.set(newTopItemInset);
+            // Update state for Android (used for paddingBottom on content container)
+            if (isAndroid) {
+                setTopItemInsetState(newTopItemInset);
+            }
             // Report combined inset to LegendList
-            // Use max instead of sum - keyboard and topItemInset share the same bottom space
+            // On Android, topItemInset is handled via paddingBottom on content container,
+            // so don't include it in reportContentInset (would be double-counted)
             const vKeyboardInset = keyboardInset.get();
-            reportContentInset(Math.max(vKeyboardInset, newTopItemInset));
+            if (isAndroid) {
+                reportContentInset(vKeyboardInset);
+            } else {
+                reportContentInset(Math.max(vKeyboardInset, newTopItemInset));
+            }
         }
     }, [topItemIndex, topItemInset, keyboardInset, reportContentInset]);
 
@@ -470,8 +486,13 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                         const newInset = calculateKeyboardInset(event.height, safeAreaInsetBottom);
                         keyboardInset.set(newInset);
 
-                        // Use max instead of sum - keyboard and topItemInset share the same bottom space
-                        runOnJS(reportContentInset)(Math.max(newInset, vTopItemInset));
+                        // On Android, topItemInset is handled via paddingBottom on content container,
+                        // so don't include it in reportContentInset (would be double-counted)
+                        if (isAndroid) {
+                            runOnJS(reportContentInset)(newInset);
+                        } else {
+                            runOnJS(reportContentInset)(Math.max(newInset, vTopItemInset));
+                        }
 
                         if (!vIsOpening) {
                             runOnJS(updateAlignItemsAtEndMinSize)(newInset);
@@ -526,26 +547,37 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         }
     });
 
-    // contentInset is not supported on Android so we have to use marginBottom instead
-    // Use max instead of sum - keyboard and topItemInset share the same bottom space
+    // contentInset is not supported on Android so we have to use marginBottom for keyboard
+    // and paddingBottom on content container for topItemInset
     const style = isAndroid
         ? useAnimatedStyle(
               () => ({
                   ...(styleFlattened || {}),
-                  marginBottom: Math.max(keyboardInset.get(), topItemInset.get()),
+                  marginBottom: keyboardInset.get(),
               }),
-              [styleProp, keyboardInset, topItemInset],
+              [styleProp, keyboardInset],
           )
         : undefined;
 
     const contentContainerStyle = useMemo(() => {
-        if (avoidKeyboardMinSize === undefined) {
-            return contentContainerStyleProp;
+        const styles: any[] = [];
+
+        if (contentContainerStyleProp) {
+            styles.push(contentContainerStyleProp);
         }
 
-        const minSizeStyle = horizontal ? { minWidth: avoidKeyboardMinSize } : { minHeight: avoidKeyboardMinSize };
-        return contentContainerStyleProp ? [contentContainerStyleProp, minSizeStyle] : minSizeStyle;
-    }, [avoidKeyboardMinSize, contentContainerStyleProp, horizontal]);
+        // On Android, use paddingBottom for topItemInset since contentInset isn't supported
+        if (isAndroid && topItemInsetState > 0) {
+            styles.push({ paddingBottom: topItemInsetState });
+        }
+
+        if (avoidKeyboardMinSize !== undefined) {
+            const minSizeStyle = horizontal ? { minWidth: avoidKeyboardMinSize } : { minHeight: avoidKeyboardMinSize };
+            styles.push(minSizeStyle);
+        }
+
+        return styles.length > 0 ? styles : undefined;
+    }, [avoidKeyboardMinSize, contentContainerStyleProp, horizontal, topItemInsetState]);
 
     return (
         <AnimatedLegendList
