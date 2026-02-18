@@ -191,6 +191,17 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         [onMetricsChangeProp, updateScrollMetrics],
     );
 
+    const handleItemSizeChange = useCallback(
+        (info: { size: number; previous: number; index: number; itemKey: string; itemData: ItemT }) => {
+            const state = refLegendList.current?.getState();
+            if (!state) {
+                return;
+            }
+            console.log("positions ", JSON.stringify([...state.positions.entries()]));
+        },
+        [],
+    );
+
     useEffect(() => {
         updateAlignItemsAtEndMinSize();
     }, [updateAlignItemsAtEndMinSize]);
@@ -457,6 +468,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             contentContainerStyle={contentContainerStyle}
             keyboardDismissMode="interactive"
             onMetricsChange={handleMetricsChange}
+            onItemSizeChanged={handleItemSizeChange}
             onScroll={scrollHandler as unknown as AnimatedLegendListProps<ItemT>["onScroll"]}
             ref={combinedRef}
             refScrollView={scrollViewRef}
