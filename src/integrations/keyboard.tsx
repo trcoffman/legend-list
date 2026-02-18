@@ -216,8 +216,9 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         if (topItemInset.get() !== newTopItemInset) {
             topItemInset.set(newTopItemInset);
             // Report combined inset to LegendList
+            // Use max instead of sum - keyboard and topItemInset share the same bottom space
             const vKeyboardInset = keyboardInset.get();
-            reportContentInset(vKeyboardInset + newTopItemInset);
+            reportContentInset(Math.max(vKeyboardInset, newTopItemInset));
         }
     }, [topItemIndex, topItemInset, keyboardInset, reportContentInset]);
 
@@ -317,11 +318,16 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                             avoidKeyboard,
                         );
 
+                        // When topItemInset is active, keyboard shares the bottom space
+                        // Only scroll by the amount that exceeds the existing topItemInset
+                        const vTopItemInset = topItemInset.get();
+                        const scrollAdjustment = Math.max(0, vEffectiveKeyboardHeight - vTopItemInset);
+
                         const targetOffset = Math.max(
                             0,
                             vIsOpening
-                                ? vScrollOffset + vEffectiveKeyboardHeight
-                                : vScrollOffset - vEffectiveKeyboardHeight,
+                                ? vScrollOffset + scrollAdjustment
+                                : vScrollOffset - scrollAdjustment,
                         );
                         scrollOffsetY.set(targetOffset);
                         animatedOffsetY.set(targetOffset);
@@ -379,9 +385,14 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                             avoidKeyboard,
                         );
 
+                        // When topItemInset is active, keyboard shares the bottom space
+                        // Only scroll by the amount that exceeds the existing topItemInset
+                        const vTopItemInset = topItemInset.get();
+                        const scrollAdjustment = Math.max(0, vEffectiveKeyboardHeight - vTopItemInset);
+
                         const targetOffset = calculateKeyboardTargetOffset(
                             scrollOffsetAtKeyboardStart.get(),
-                            vEffectiveKeyboardHeight,
+                            scrollAdjustment,
                             vIsOpening,
                             progress,
                         );
@@ -426,10 +437,15 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                     );
                     const vIsOpening = isOpening.get();
 
+                    // When topItemInset is active, keyboard shares the bottom space
+                    // Only scroll by the amount that exceeds the existing topItemInset
+                    const vTopItemInset = topItemInset.get();
+                    const scrollAdjustment = Math.max(0, vEffectiveKeyboardHeight - vTopItemInset);
+
                     if (!wasInteractive) {
                         const targetOffset = calculateKeyboardTargetOffset(
                             scrollOffsetAtKeyboardStart.get(),
-                            vEffectiveKeyboardHeight,
+                            scrollAdjustment,
                             vIsOpening,
                             progress,
                         );
@@ -450,7 +466,8 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                         const newInset = calculateKeyboardInset(event.height, safeAreaInsetBottom);
                         keyboardInset.set(newInset);
 
-                        runOnJS(reportContentInset)(newInset + topItemInset.get());
+                        // Use max instead of sum - keyboard and topItemInset share the same bottom space
+                        runOnJS(reportContentInset)(Math.max(newInset, vTopItemInset));
 
                         if (!vIsOpening) {
                             runOnJS(updateAlignItemsAtEndMinSize)(newInset);
@@ -486,7 +503,8 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         if (isIos) {
             const keyboardInsetBottom = keyboardInset.get();
             const vTopItemInset = topItemInset.get();
-            const totalInsetBottom = keyboardInsetBottom + vTopItemInset;
+            // Use max instead of sum - keyboard and topItemInset share the same bottom space
+            const totalInsetBottom = Math.max(keyboardInsetBottom, vTopItemInset);
 
             const contentInset = {
                 bottom: (contentInsetProp?.bottom ?? 0) + (horizontal ? 0 : totalInsetBottom),
@@ -505,11 +523,12 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     });
 
     // contentInset is not supported on Android so we have to use marginBottom instead
+    // Use max instead of sum - keyboard and topItemInset share the same bottom space
     const style = isAndroid
         ? useAnimatedStyle(
               () => ({
                   ...(styleFlattened || {}),
-                  marginBottom: keyboardInset.get() + topItemInset.get(),
+                  marginBottom: Math.max(keyboardInset.get(), topItemInset.get()),
               }),
               [styleProp, keyboardInset, topItemInset],
           )
