@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { BlurView } from "expo-blur";
+import { useEffect, useMemo, useState } from "react";
 import { Button, type LayoutChangeEvent, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,7 +33,7 @@ const AIChat = () => {
     );
 
     const inputContainerStyle = useMemo(
-        () => [styles.inputContainer, { paddingBottom: insets.bottom + 10, marginTop: -inputHeight }],
+        () => [styles.inputContainer, { marginTop: -inputHeight, paddingBottom: insets.bottom + 10 }],
         [inputHeight, insets.bottom],
     );
 
@@ -205,8 +205,6 @@ This makes it possible to scroll through thousands of items without performance 
                             initialScrollAtEnd
                             keyExtractor={(item) => item.id}
                             maintainVisibleContentPosition
-                            safeAreaInsetBottom={insets.bottom}
-                            style={styles.list}
                             renderItem={({ item }) => (
                                 <>
                                     {item.isPlaceholder ? (
@@ -252,21 +250,23 @@ This makes it possible to scroll through thousands of items without performance 
                                     )}
                                 </>
                             )}
+                            safeAreaInsetBottom={insets.bottom}
+                            style={styles.list}
                         />
                     )}
                 </KeyboardGestureArea>
                 <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
                     <BlurView
                         experimentalBlurMethod="dimezisBlurView"
-                        style={inputContainerStyle}
                         onLayout={handleInputLayout}
+                        style={inputContainerStyle}
                     >
                         <TextInput
+                            multiline
                             onChangeText={setInputText}
                             placeholder="Type a message"
                             style={styles.input}
                             value={inputText}
-                            multiline
                         />
                         <Button onPress={sendMessage} title="Send" />
                     </BlurView>
@@ -284,27 +284,6 @@ const styles = StyleSheet.create({
     contentContainer: {
         paddingHorizontal: 16,
         // paddingBottom is set dynamically based on input height
-    },
-    input: {
-        backgroundColor: "white",
-        borderColor: "#ccc",
-        borderRadius: 5,
-        borderWidth: 1,
-        flex: 1,
-        marginRight: 10,
-        padding: 10,
-    },
-    inputContainer: {
-        alignItems: "center",
-        backgroundColor: "transparent",
-        borderColor: "#ccc",
-        borderTopWidth: 1,
-        flexDirection: "row",
-        padding: 10,
-        // marginTop is set dynamically based on input height
-    },
-    list: {
-        flex: 1,
     },
     dot: {
         backgroundColor: "#007AFF",
@@ -330,6 +309,27 @@ const styles = StyleSheet.create({
         animationDuration: "1.4s",
         animationIterationCount: "infinite",
         animationName: "typing",
+    },
+    input: {
+        backgroundColor: "white",
+        borderColor: "#ccc",
+        borderRadius: 5,
+        borderWidth: 1,
+        flex: 1,
+        marginRight: 10,
+        padding: 10,
+    },
+    inputContainer: {
+        alignItems: "center",
+        backgroundColor: "transparent",
+        borderColor: "#ccc",
+        borderTopWidth: 1,
+        flexDirection: "row",
+        padding: 10,
+        // marginTop is set dynamically based on input height
+    },
+    list: {
+        flex: 1,
     },
     messageContainer: {
         borderRadius: 16,

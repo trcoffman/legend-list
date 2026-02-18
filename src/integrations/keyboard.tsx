@@ -325,9 +325,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
 
                         const targetOffset = Math.max(
                             0,
-                            vIsOpening
-                                ? vScrollOffset + scrollAdjustment
-                                : vScrollOffset - scrollAdjustment,
+                            vIsOpening ? vScrollOffset + scrollAdjustment : vScrollOffset - scrollAdjustment,
                         );
                         scrollOffsetY.set(targetOffset);
                         animatedOffsetY.set(targetOffset);

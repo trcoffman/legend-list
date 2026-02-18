@@ -1,8 +1,9 @@
-import { type PropsWithChildren, useState } from "react";
-import { Button, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRef, useState } from "react";
+import { Button, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type { LegendListRef } from "@legendapp/list";
 import { KeyboardAvoidingLegendList } from "@legendapp/list/keyboard";
 
 type Message = {
@@ -124,16 +125,28 @@ function ChatMessage({ item }: { item: Message }) {
 const ChatKeyboard = () => {
     const [messages, setMessages] = useState<Message[]>(defaultChatMessages);
     const [inputText, setInputText] = useState("");
+    const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const listRef = useRef<LegendListRef>(null);
     const insets = useSafeAreaInsets();
 
     const sendMessage = () => {
         const text = inputText || "Empty message";
         if (text.trim()) {
+            // Set topItemIndex to the index of the user's message (current length before adding)
+            const userMessageIndex = messages.length;
+            setTopItemIndex(userMessageIndex);
+
             setMessages((messagesNew) => [
                 ...messagesNew,
                 { id: String(idCounter++), sender: "user", text: text, timeStamp: Date.now() },
             ]);
             setInputText("");
+
+            // Scroll to end after the message is added
+            setTimeout(() => {
+                listRef.current?.scrollToEnd({ animated: true });
+            }, 50);
+
             setTimeout(() => {
                 setMessages((messagesNew) => [
                     ...messagesNew,
@@ -153,7 +166,6 @@ const ChatKeyboard = () => {
             <View style={[styles.container, { paddingBottom: insets.bottom, paddingTop: insets.top }]}>
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     <KeyboardAvoidingLegendList
-                        topItemIndex={messages.length - 2}
                         alignItemsAtEnd
                         contentContainerStyle={styles.contentContainer}
                         data={messages}
@@ -162,9 +174,11 @@ const ChatKeyboard = () => {
                         keyExtractor={(item) => item.id}
                         maintainScrollAtEnd
                         maintainVisibleContentPosition
+                        ref={listRef}
                         renderItem={ChatMessage}
                         safeAreaInsetBottom={insets.bottom}
                         style={styles.list}
+                        topItemIndex={topItemIndex}
                     />
                 </KeyboardGestureArea>
                 <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
