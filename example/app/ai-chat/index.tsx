@@ -63,7 +63,7 @@ const AIChat = () => {
             // Simulate AI response
             setTimeout(() => {
                 simulateAIResponse(text);
-            }, 4000);
+            }, 400);
         }
     };
 
