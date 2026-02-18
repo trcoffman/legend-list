@@ -201,7 +201,6 @@ This makes it possible to scroll through thousands of items without performance 
                             avoidKeyboard
                             contentContainerStyle={contentContainerStyle}
                             data={messages}
-                            estimatedItemSize={60}
                             initialScrollAtEnd
                             keyExtractor={(item) => item.id}
                             maintainVisibleContentPosition
