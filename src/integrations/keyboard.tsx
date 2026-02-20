@@ -505,9 +505,10 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                         }
                     }
 
-                    if (onKeyboardTransitionEnd) {
-                        runOnJS(onKeyboardTransitionEnd)(event.height > 0);
-                    }
+                }
+
+                if (onKeyboardTransitionEnd) {
+                    runOnJS(onKeyboardTransitionEnd)(event.height > 0);
                 }
             },
         },
