@@ -413,9 +413,7 @@ const styles = StyleSheet.create({
         alignSelf: "flex-start",
         maxWidth: "85%",
     },
-    timeStamp: {
-        marginVertical: 5,
-    },
+    timeStamp: {},
     timeStampText: {
         color: "#888",
         fontSize: 12,
@@ -423,7 +421,6 @@ const styles = StyleSheet.create({
     typingIndicator: {
         alignItems: "center",
         flexDirection: "row",
-        marginBottom: 12,
     },
     userMessageContainer: {
         backgroundColor: "#007AFF",
