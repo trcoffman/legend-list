@@ -25,6 +25,7 @@ const AIChat = () => {
     const [inputHeight, setInputHeight] = useState(0);
     const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
     const pendingMessageRef = useRef<string | null>(null);
+    const scrollToEndOnMeasureRef = useRef(false);
     const listRef = useRef<LegendListRef>(null);
     const inputRef = useRef<TextInput>(null);
     const insets = useSafeAreaInsets();
@@ -45,6 +46,8 @@ const AIChat = () => {
         // Set topItemIndex to the user's message index
         setTopItemIndex(messages.length);
 
+        scrollToEndOnMeasureRef.current = true;
+
         setMessages((prevMessages) => [
             ...prevMessages,
             {
@@ -55,12 +58,6 @@ const AIChat = () => {
                 timeStamp: Date.now(),
             },
         ]);
-
-        // Scroll to end after the message is added
-        setTimeout(() => {
-            console.log("Scrolling to end after sending message");
-            listRef.current?.scrollToEnd({ animated: true });
-        }, 400);
 
         // Simulate AI response
         setTimeout(() => {
@@ -256,6 +253,12 @@ This makes it possible to scroll through thousands of items without performance 
                             keyExtractor={(_item, index) => `item-${index}`}
                             maintainScrollAtEnd={Platform.OS === "web"}
                             maintainVisibleContentPosition
+                            onItemSizeChanged={(info) => {
+                                if (scrollToEndOnMeasureRef.current) {
+                                    scrollToEndOnMeasureRef.current = false;
+                                    listRef.current?.scrollToEnd({ animated: true });
+                                }
+                            }}
                             onKeyboardTransitionEnd={handleKeyboardTransitionEnd}
                             ref={listRef}
                             renderItem={({ item }) => (
