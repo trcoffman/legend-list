@@ -128,6 +128,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const keyboardInsetRef = useRef(0);
     const topItemInset = useSharedValue(0);
     const [topItemInsetState, setTopItemInsetState] = useState(0);
+    const pendingTopItemRaf = useRef<number | null>(null);
     const [alignItemsAtEndMinSize, setAlignItemsAtEndMinSize] = useState<number | undefined>(undefined);
     const onScrollValue = onScrollProp as unknown;
     const onScrollCallback =
@@ -253,6 +254,25 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         }
     }, [topItemIndex, reportContentInset, isAndroid]);
 
+    // On Android, defer topItemInset recalculation to let layout settle
+    const scheduleTopItemRecalc = useCallback(() => {
+        if (pendingTopItemRaf.current !== null) {
+            cancelAnimationFrame(pendingTopItemRaf.current);
+        }
+        pendingTopItemRaf.current = requestAnimationFrame(() => {
+            pendingTopItemRaf.current = null;
+            calculateTopItemInset();
+        });
+    }, [calculateTopItemInset]);
+
+    const recalcTopItemInset = useCallback(() => {
+        if (isAndroid) {
+            scheduleTopItemRecalc();
+        } else {
+            calculateTopItemInset();
+        }
+    }, [isAndroid, scheduleTopItemRecalc, calculateTopItemInset]);
+
     const updateScrollMetrics = useCallback(() => {
         // Metrics are captured in shared values because worklets cannot call getState().
         const state = refLegendList.current?.getState();
@@ -268,21 +288,21 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         (metrics: LegendListMetrics) => {
             updateScrollMetrics();
             if (topItemIndex !== undefined) {
-                calculateTopItemInset();
+                recalcTopItemInset();
             }
             onMetricsChangeProp?.(metrics);
         },
-        [onMetricsChangeProp, updateScrollMetrics, topItemIndex, calculateTopItemInset],
+        [onMetricsChangeProp, updateScrollMetrics, topItemIndex, recalcTopItemInset],
     );
 
     const handleItemSizeChange = useCallback(
         (info: { size: number; previous: number; index: number; itemKey: string; itemData: ItemT }) => {
             if (topItemIndex !== undefined && info.index >= topItemIndex) {
-                calculateTopItemInset();
+                recalcTopItemInset();
             }
             onItemSizeChangedProp?.(info);
         },
-        [topItemIndex, calculateTopItemInset, onItemSizeChangedProp],
+        [topItemIndex, recalcTopItemInset, onItemSizeChangedProp],
     );
 
     useEffect(() => {
@@ -291,15 +311,17 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
 
     // Recalculate topItemInset when topItemIndex changes
     useEffect(() => {
-        calculateTopItemInset();
-    }, [topItemIndex, calculateTopItemInset]);
+        recalcTopItemInset();
+    }, [topItemIndex, recalcTopItemInset]);
 
-    // Recalculate topItemInset when data length changes
+    // Cleanup pending rAF on unmount
     useEffect(() => {
-        if (topItemIndex !== undefined) {
-            calculateTopItemInset();
-        }
-    }, [props.data?.length, topItemIndex, calculateTopItemInset]);
+        return () => {
+            if (pendingTopItemRaf.current !== null) {
+                cancelAnimationFrame(pendingTopItemRaf.current);
+            }
+        };
+    }, []);
 
     const getEffectiveKeyboardHeightFromInset = useCallback(
         (nextKeyboardInset: number) => {
