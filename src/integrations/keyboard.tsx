@@ -127,7 +127,6 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const keyboardInsetRef = useRef(0);
     const topItemInset = useSharedValue(0);
     const [topItemInsetState, setTopItemInsetState] = useState(0);
-    const pendingTopItemRaf = useRef<number | null>(null);
     const [alignItemsAtEndMinSize, setAlignItemsAtEndMinSize] = useState<number | undefined>(undefined);
     const onScrollValue = onScrollProp as unknown;
     const onScrollCallback =
@@ -253,16 +252,6 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         }
     }, [topItemIndex, reportContentInset, isAndroid]);
 
-    const scheduleTopItemRecalc = useCallback(() => {
-        if (pendingTopItemRaf.current !== null) {
-            cancelAnimationFrame(pendingTopItemRaf.current);
-        }
-        pendingTopItemRaf.current = requestAnimationFrame(() => {
-            pendingTopItemRaf.current = null;
-            calculateTopItemInset();
-        });
-    }, [calculateTopItemInset]);
-
     const updateScrollMetrics = useCallback(() => {
         // Metrics are captured in shared values because worklets cannot call getState().
         const state = refLegendList.current?.getState();
@@ -288,11 +277,11 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
     const handleItemSizeChange = useCallback(
         (info: { size: number; previous: number; index: number; itemKey: string; itemData: ItemT }) => {
             if (topItemIndex !== undefined && info.index >= topItemIndex) {
-                scheduleTopItemRecalc();
+                calculateTopItemInset();
             }
             onItemSizeChangedProp?.(info);
         },
-        [topItemIndex, scheduleTopItemRecalc, onItemSizeChangedProp],
+        [topItemIndex, calculateTopItemInset, onItemSizeChangedProp],
     );
 
     useEffect(() => {
@@ -304,21 +293,12 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         calculateTopItemInset();
     }, [topItemIndex, calculateTopItemInset]);
 
-    // Recalculate topItemInset when data length changes (rAF to let new content render first)
+    // Recalculate topItemInset when data length changes
     useEffect(() => {
         if (topItemIndex !== undefined) {
-            scheduleTopItemRecalc();
+            calculateTopItemInset();
         }
-    }, [props.data?.length, topItemIndex, scheduleTopItemRecalc]);
-
-    // Cleanup pending rAF on unmount
-    useEffect(() => {
-        return () => {
-            if (pendingTopItemRaf.current !== null) {
-                cancelAnimationFrame(pendingTopItemRaf.current);
-            }
-        };
-    }, []);
+    }, [props.data?.length, topItemIndex, calculateTopItemInset]);
 
     const getEffectiveKeyboardHeightFromInset = useCallback(
         (nextKeyboardInset: number) => {
