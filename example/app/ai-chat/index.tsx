@@ -48,10 +48,10 @@ const AIChat = () => {
             ...prevMessages,
             {
                 id: String(idCounter++),
+                isNew: true,
                 sender: "user",
                 text: text,
                 timeStamp: Date.now(),
-                isNew: true,
             },
         ]);
 
@@ -241,15 +241,14 @@ This makes it possible to scroll through thousands of items without performance 
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     {inputHeight !== 0 && (
                         <KeyboardAvoidingLegendList
-                            ref={listRef}
                             avoidKeyboard
                             contentContainerStyle={contentContainerStyle}
                             data={messages}
                             initialScrollAtEnd
-                            keyExtractor={(item, index) => `item-${index}`}
+                            keyExtractor={(_item, index) => `item-${index}`}
                             maintainScrollAtEnd={Platform.OS === "web"}
                             maintainVisibleContentPosition
-                            topItemIndex={topItemIndex}
+                            ref={listRef}
                             renderItem={({ item }) => (
                                 <View>
                                     {item.isPlaceholder ? (
@@ -307,6 +306,7 @@ This makes it possible to scroll through thousands of items without performance 
                             )}
                             safeAreaInsetBottom={insets.bottom}
                             style={styles.list}
+                            topItemIndex={topItemIndex}
                         />
                     )}
                 </KeyboardGestureArea>
@@ -317,10 +317,10 @@ This makes it possible to scroll through thousands of items without performance 
                         style={inputContainerStyle}
                     >
                         <TextInput
-                            ref={inputRef}
                             multiline
                             onChangeText={setInputText}
                             placeholder="Type a message"
+                            ref={inputRef}
                             style={styles.input}
                             value={inputText}
                         />

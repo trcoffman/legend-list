@@ -14,7 +14,7 @@ import {
 } from "react-native-reanimated";
 import type { ReanimatedScrollEvent } from "react-native-reanimated/lib/typescript/hook/commonTypes";
 
-import type { LegendListMetrics, LegendListRef, TypedForwardRef } from "@legendapp/list";
+import type { LegendListMetrics, LegendListRef, TypedForwardRef } from "@legendapp/list/react-native";
 import { AnimatedLegendList, type AnimatedLegendListProps } from "@legendapp/list/reanimated";
 import { useCombinedRef } from "@/hooks/useCombinedRef";
 
@@ -192,10 +192,6 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         if (!state) {
             return;
         }
-        console.log(
-            "Item sizes",
-            Array.from({ length: state.data.length }, (_, i) => state.sizeAtIndex(i)),
-        );
 
         const dataLength = state.data.length;
         const vScrollLength = state.scrollLength;
@@ -223,7 +219,6 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         }
 
         const newTopItemInset = Math.max(0, vScrollLength - sumOfSizes);
-        console.log("🪵RVK keyboard.tsx:226 ", { vScrollLength, sumOfSizes, newTopItemInset }, "RVK");
 
         if (topItemInset.get() !== newTopItemInset) {
             topItemInset.set(newTopItemInset);
