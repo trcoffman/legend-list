@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
-import { Dimensions, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button, Keyboard, type LayoutChangeEvent, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { LegendList } from "@legendapp/list/react-native";
-import { useHeaderHeight } from "@react-navigation/elements";
+import type { LegendListRef } from "@legendapp/list";
+import { KeyboardAvoidingLegendList } from "@legendapp/list/keyboard";
 
 type Message = {
     id: string;
@@ -11,17 +14,148 @@ type Message = {
     sender: "user" | "system";
     timeStamp: number;
     isPlaceholder?: boolean;
+    isNew?: boolean;
 };
 
 let idCounter = 0;
 
 const AIChat = () => {
     const [messages, setMessages] = useState<Message[]>([]);
-    const headerHeight = Platform.OS === "ios" ? useHeaderHeight() : 80;
-    const screenHeight = Dimensions.get("window").height;
-    const availableHeight = screenHeight - headerHeight; // Subtract header and some padding
+    const [inputText, setInputText] = useState("");
+    const [inputHeight, setInputHeight] = useState(0);
+    const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const listRef = useRef<LegendListRef>(null);
+    const inputRef = useRef<TextInput>(null);
+    const insets = useSafeAreaInsets();
+
+    const handleInputLayout = (event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout;
+        setInputHeight(height);
+    };
+
+    const contentContainerStyle = useMemo(() => styles.contentContainer, [inputHeight]);
+
+    const inputContainerStyle = useMemo(
+        () => [styles.inputContainer, { paddingBottom: insets.bottom + 10 }],
+        [inputHeight, insets.bottom],
+    );
+
+    const doSendMessage = (text: string) => {
+        // Set topItemIndex to the user's message index
+        setTopItemIndex(messages.length);
+
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+                id: String(idCounter++),
+                sender: "user",
+                text: text,
+                timeStamp: Date.now(),
+                isNew: true,
+            },
+        ]);
+
+        // Scroll to end after the message is added
+        setTimeout(() => {
+            console.log("Scrolling to end after sending message");
+            listRef.current?.scrollToEnd({ animated: true });
+        }, 200);
+
+        // Simulate AI response
+        setTimeout(() => {
+            simulateAIResponse(text);
+        }, 800);
+    };
+
+    const sendMessage = () => {
+        const text = inputText.trim();
+        if (!text) return;
+
+        // Clear input immediately for better UX
+        setInputText("");
+
+        // Check if input is focused (keyboard is likely showing)
+        const isFocused = inputRef.current?.isFocused();
+
+        if (isFocused) {
+            // Blur and wait for keyboard to hide before sending
+            inputRef.current?.blur();
+
+            const subscription = Keyboard.addListener("keyboardDidHide", () => {
+                subscription.remove();
+                doSendMessage(text);
+            });
+        } else {
+            // Keyboard already hidden, send immediately
+            doSendMessage(text);
+        }
+    };
+
+    const simulateAIResponse = (userMessage: string) => {
+        // Generate a unique ID for this AI response
+        const aiMessageId = String(idCounter++);
+
+        // Add placeholder
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+                id: aiMessageId,
+                isPlaceholder: true,
+                sender: "system",
+                text: "",
+                timeStamp: Date.now(),
+            },
+        ]);
+
+        // Simulate AI thinking time
+        setTimeout(() => {
+            const replies = [
+                // Short reply
+                `Got it! "${userMessage}" - let me know if you need more help.`,
+                // Medium reply
+                `I understand you said: "${userMessage}". That's a great point! Here are a few thoughts:\n\n1. First consideration\n2. Second aspect\n\nAnything else?`,
+                // Long reply
+                `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know?`,
+                // Super long
+                `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know? I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know? I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know?`,
+            ];
+            // const responseText = replies[Math.floor(Math.random() * replies.length)];
+            const responseText = replies[2];
+            const words = responseText.split(" ");
+            let currentWordIndex = 0;
+
+            // Replace placeholder with empty system message (keep same ID)
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.id === aiMessageId
+                        ? {
+                              ...msg,
+                              isPlaceholder: false,
+                              text: "",
+                          }
+                        : msg,
+                ),
+            );
+
+            // Stream words - only update the message with matching ID
+            const streamInterval = setInterval(() => {
+                if (currentWordIndex < words.length) {
+                    const currentText = words.slice(0, currentWordIndex + 1).join(" ");
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg) => (msg.id === aiMessageId ? { ...msg, text: currentText } : msg)),
+                    );
+                    currentWordIndex++;
+                } else {
+                    clearInterval(streamInterval);
+                }
+            }, 30);
+        }, 5000);
+    };
 
     useEffect(() => {
+        // Generate IDs for initial messages
+        const initialAiMessageId = String(idCounter++);
+
         // After 1 second, add user message and system placeholder
         const timer1 = setTimeout(() => {
             setMessages([
@@ -32,7 +166,7 @@ const AIChat = () => {
                     timeStamp: Date.now(),
                 },
                 {
-                    id: String(idCounter++),
+                    id: initialAiMessageId,
                     isPlaceholder: true,
                     sender: "system",
                     text: "",
@@ -66,37 +200,33 @@ This makes it possible to scroll through thousands of items without performance 
         let currentWordIndex = 0;
 
         const timer2 = setTimeout(() => {
-            // Replace placeholder with empty system message
+            // Replace placeholder with empty system message (keep same ID)
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
-                    msg.isPlaceholder
+                    msg.id === initialAiMessageId
                         ? {
-                              id: String(idCounter++),
+                              ...msg,
                               isPlaceholder: false,
-                              sender: "system",
                               text: "",
-                              timeStamp: Date.now(),
                           }
                         : msg,
                 ),
             );
 
-            // Start streaming words
+            // Start streaming words - only update the message with matching ID
             const streamInterval = setInterval(() => {
                 if (currentWordIndex < words.length) {
                     const currentText = words.slice(0, currentWordIndex + 1).join(" ");
                     setMessages((prevMessages) =>
                         prevMessages.map((msg) =>
-                            msg.sender === "system" && !msg.isPlaceholder && msg.text !== fullText
-                                ? { ...msg, text: currentText }
-                                : msg,
+                            msg.id === initialAiMessageId ? { ...msg, text: currentText } : msg,
                         ),
                     );
                     currentWordIndex++;
                 } else {
                     clearInterval(streamInterval);
                 }
-            }, 50); // Stream one word every 16ms
+            }, 1);
         }, 1500);
 
         return () => {
@@ -106,72 +236,99 @@ This makes it possible to scroll through thousands of items without performance 
     }, []);
 
     return (
-        <SafeAreaView edges={["bottom"]} style={styles.container}>
-            <KeyboardAvoidingView
-                behavior="padding"
-                contentContainerStyle={{ flex: 1 }}
-                keyboardVerticalOffset={headerHeight}
-                style={styles.container}
-            >
-                <LegendList
-                    // alignItemsAtEnd
-                    contentContainerStyle={styles.contentContainer}
-                    data={messages}
-                    estimatedItemSize={60}
-                    keyExtractor={(item) => item.id}
-                    // maintainScrollAtEnd
-                    maintainVisibleContentPosition
-                    renderItem={({ item }) => (
-                        <>
-                            {item.isPlaceholder ? (
-                                <View
-                                    style={[
-                                        styles.systemMessageContainer,
-                                        styles.systemStyle,
-                                        { minHeight: availableHeight * 0.9 }, // Take up most of available space
-                                    ]}
-                                >
-                                    <View style={[styles.placeholderContainer, styles.messageContainer]}>
-                                        <View style={styles.typingIndicator}>
-                                            <View style={[styles.dot, styles.dot1]} />
-                                            <View style={[styles.dot, styles.dot2]} />
-                                            <View style={[styles.dot, styles.dot3]} />
+        <KeyboardProvider>
+            <View style={[styles.container, { paddingBottom: 0, paddingTop: insets.top }]}>
+                <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
+                    {inputHeight !== 0 && (
+                        <KeyboardAvoidingLegendList
+                            ref={listRef}
+                            avoidKeyboard
+                            contentContainerStyle={contentContainerStyle}
+                            data={messages}
+                            initialScrollAtEnd
+                            keyExtractor={(item, index) => `item-${index}`}
+                            maintainScrollAtEnd={Platform.OS === "web"}
+                            maintainVisibleContentPosition
+                            topItemIndex={topItemIndex}
+                            renderItem={({ item }) => (
+                                <View>
+                                    {item.isPlaceholder ? (
+                                        <View
+                                            style={[
+                                                styles.messageContainer,
+                                                styles.systemMessageContainer,
+                                                styles.systemStyle,
+                                            ]}
+                                        >
+                                            <View style={[styles.placeholderContainer, styles.messageContainer]}>
+                                                <View style={styles.typingIndicator}>
+                                                    <View style={[styles.dot, styles.dot1]} />
+                                                    <View style={[styles.dot, styles.dot2]} />
+                                                    <View style={[styles.dot, styles.dot3]} />
+                                                </View>
+                                                <Text style={styles.placeholderText}>AI is thinking...</Text>
+                                            </View>
                                         </View>
-                                        <Text style={styles.placeholderText}>AI is thinking...</Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <View
-                                    style={[
-                                        styles.messageContainer,
-                                        item.sender === "system"
-                                            ? styles.systemMessageContainer
-                                            : styles.userMessageContainer,
-                                        item.sender === "system" ? styles.systemStyle : styles.userStyle,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[styles.messageText, item.sender === "user" && styles.userMessageText]}
-                                    >
-                                        {item.text}
-                                    </Text>
-                                    <View
-                                        style={[
-                                            styles.timeStamp,
-                                            item.sender === "system" ? styles.systemStyle : styles.userStyle,
-                                        ]}
-                                    >
-                                        <Text style={styles.timeStampText}>
-                                            {new Date(item.timeStamp).toLocaleTimeString()}
-                                        </Text>
-                                    </View>
+                                    ) : item.sender === "user" ? (
+                                        <Animated.View
+                                            entering={item.isNew ? FadeIn.duration(1000) : undefined}
+                                            style={[
+                                                styles.messageContainer,
+                                                styles.userMessageContainer,
+                                                styles.userStyle,
+                                            ]}
+                                        >
+                                            <Text style={[styles.messageText, styles.userMessageText]}>
+                                                {item.text}
+                                            </Text>
+                                            <View style={[styles.timeStamp, styles.userStyle]}>
+                                                <Text style={styles.timeStampText}>
+                                                    {new Date(item.timeStamp).toLocaleTimeString()}
+                                                </Text>
+                                            </View>
+                                        </Animated.View>
+                                    ) : (
+                                        <View
+                                            style={[
+                                                styles.messageContainer,
+                                                styles.systemMessageContainer,
+                                                styles.systemStyle,
+                                            ]}
+                                        >
+                                            <Text style={styles.messageText}>{item.text}</Text>
+                                            <View style={[styles.timeStamp, styles.systemStyle]}>
+                                                <Text style={styles.timeStampText}>
+                                                    {new Date(item.timeStamp).toLocaleTimeString()}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
                                 </View>
                             )}
-                        </>
+                            safeAreaInsetBottom={insets.bottom}
+                            style={styles.list}
+                        />
                     )}
-                />
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                </KeyboardGestureArea>
+                <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+                    <BlurView
+                        experimentalBlurMethod="dimezisBlurView"
+                        onLayout={handleInputLayout}
+                        style={inputContainerStyle}
+                    >
+                        <TextInput
+                            ref={inputRef}
+                            multiline
+                            onChangeText={setInputText}
+                            placeholder="Type a message"
+                            style={styles.input}
+                            value={inputText}
+                        />
+                        <Button onPress={sendMessage} title="Send" />
+                    </BlurView>
+                </KeyboardStickyView>
+            </View>
+        </KeyboardProvider>
     );
 };
 
@@ -182,6 +339,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         paddingHorizontal: 16,
+        // paddingBottom is set dynamically based on input height
     },
     dot: {
         backgroundColor: "#007AFF",
@@ -208,9 +366,30 @@ const styles = StyleSheet.create({
         animationIterationCount: "infinite",
         animationName: "typing",
     },
+    input: {
+        backgroundColor: "white",
+        borderColor: "#ccc",
+        borderRadius: 5,
+        borderWidth: 1,
+        flex: 1,
+        marginRight: 10,
+        padding: 10,
+    },
+    inputContainer: {
+        alignItems: "center",
+        backgroundColor: "transparent",
+        borderColor: "#ccc",
+        borderTopWidth: 1,
+        flexDirection: "row",
+        padding: 10,
+        // marginTop is set dynamically based on input height
+    },
+    list: {
+        flex: 1,
+        overflow: "visible",
+    },
     messageContainer: {
         borderRadius: 16,
-        marginVertical: 4,
         padding: 16,
     },
     messageText: {
@@ -227,7 +406,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontStyle: "italic",
     },
-    systemMessageContainer: {},
+    systemMessageContainer: {
+        minHeight: 180,
+    },
     systemStyle: {
         alignSelf: "flex-start",
         maxWidth: "85%",
