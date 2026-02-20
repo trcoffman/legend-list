@@ -34,6 +34,7 @@ type KeyboardControllerLegendListProps<ItemT> = Omit<
     avoidKeyboard?: boolean;
     topItemIndex?: number;
     onItemSizeChanged?: AnimatedLegendListProps<ItemT>["onItemSizeChanged"];
+    onKeyboardTransitionEnd?: (isOpen: boolean) => void;
 };
 
 const clampProgress = (progress: number) => {
@@ -95,7 +96,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         ...rest
     } = props;
 
-    const { alignItemsAtEnd, avoidKeyboard: avoidKeyboardProp, topItemIndex } = props;
+    const { alignItemsAtEnd, avoidKeyboard: avoidKeyboardProp, onKeyboardTransitionEnd, topItemIndex } = props;
     const avoidKeyboard = !!(avoidKeyboardProp || alignItemsAtEnd);
 
     const styleFlattened = StyleSheet.flatten(styleProp) as ScrollViewProps;
@@ -503,6 +504,10 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
                             animatedOffsetY.set(scrollOffsetY.get());
                         }
                     }
+
+                    if (onKeyboardTransitionEnd) {
+                        runOnJS(onKeyboardTransitionEnd)(event.height > 0);
+                    }
                 }
             },
         },
@@ -512,6 +517,7 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             getEffectiveKeyboardHeightFromEvent,
             getEffectiveKeyboardHeightFromInset,
             horizontal,
+            onKeyboardTransitionEnd,
             reportContentInset,
             safeAreaInsetBottom,
             scrollViewRef,
