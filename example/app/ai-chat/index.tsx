@@ -59,7 +59,7 @@ const AIChat = () => {
         setTimeout(() => {
             console.log("Scrolling to end after sending message");
             listRef.current?.scrollToEnd({ animated: true });
-        }, 200);
+        }, 400);
 
         // Simulate AI response
         setTimeout(() => {
@@ -119,8 +119,8 @@ const AIChat = () => {
                 // Super long
                 `I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know? I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know? I understand you said: "${userMessage}". This is a simulated AI response that demonstrates the streaming text functionality.\n\nLet me provide you with more details:\n\n1. First point about your question - this is important to consider when thinking about the broader context of your inquiry.\n\n2. Second important consideration - there are multiple angles to approach this from, and each has its own merits.\n\n3. Third aspect to keep in mind - don't forget about the practical implications and how they might affect your decision.\n\n4. Fourth element worth exploring - sometimes the less obvious factors turn out to be the most significant.\n\nIn conclusion, I hope this helps clarify things. Is there anything else you'd like to know?`,
             ];
-            // const responseText = replies[Math.floor(Math.random() * replies.length)];
-            const responseText = replies[2];
+            const responseText = replies[Math.floor(Math.random() * replies.length)];
+            // const responseText = replies[2];
             const words = responseText.split(" ");
             let currentWordIndex = 0;
 
@@ -270,7 +270,7 @@ This makes it possible to scroll through thousands of items without performance 
                                         </View>
                                     ) : item.sender === "user" ? (
                                         <Animated.View
-                                            entering={item.isNew ? FadeIn.duration(1000) : undefined}
+                                            entering={item.isNew ? FadeIn.duration(1000).delay(300) : undefined}
                                             style={[
                                                 styles.messageContainer,
                                                 styles.userMessageContainer,
