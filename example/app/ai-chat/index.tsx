@@ -256,7 +256,9 @@ This makes it possible to scroll through thousands of items without performance 
                             onItemSizeChanged={(info) => {
                                 if (scrollToEndOnMeasureRef.current) {
                                     scrollToEndOnMeasureRef.current = false;
-                                    listRef.current?.scrollToEnd({ animated: true });
+                                    setTimeout(() => {
+                                        listRef.current?.scrollToEnd({ animated: true });
+                                    }, 400);
                                 }
                             }}
                             onKeyboardTransitionEnd={handleKeyboardTransitionEnd}
