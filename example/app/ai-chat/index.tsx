@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Keyboard, type LayoutChangeEvent, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, type LayoutChangeEvent, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardGestureArea, KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,6 +24,7 @@ const AIChat = () => {
     const [inputText, setInputText] = useState("");
     const [inputHeight, setInputHeight] = useState(0);
     const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const pendingMessageRef = useRef<string | null>(null);
     const listRef = useRef<LegendListRef>(null);
     const inputRef = useRef<TextInput>(null);
     const insets = useSafeAreaInsets();
@@ -78,18 +79,25 @@ const AIChat = () => {
         const isFocused = inputRef.current?.isFocused();
 
         if (isFocused) {
-            // Blur and wait for keyboard to hide before sending
+            // Stash the message and blur; onKeyboardTransitionEnd will send it
+            pendingMessageRef.current = text;
             inputRef.current?.blur();
-
-            const subscription = Keyboard.addListener("keyboardDidHide", () => {
-                subscription.remove();
-                doSendMessage(text);
-            });
         } else {
             // Keyboard already hidden, send immediately
             doSendMessage(text);
         }
     };
+
+    const handleKeyboardTransitionEnd = useCallback(
+        (isOpen: boolean) => {
+            if (!isOpen && pendingMessageRef.current) {
+                const text = pendingMessageRef.current;
+                pendingMessageRef.current = null;
+                doSendMessage(text);
+            }
+        },
+        [doSendMessage],
+    );
 
     const simulateAIResponse = (userMessage: string) => {
         // Generate a unique ID for this AI response
@@ -248,6 +256,7 @@ This makes it possible to scroll through thousands of items without performance 
                             keyExtractor={(_item, index) => `item-${index}`}
                             maintainScrollAtEnd={Platform.OS === "web"}
                             maintainVisibleContentPosition
+                            onKeyboardTransitionEnd={handleKeyboardTransitionEnd}
                             ref={listRef}
                             renderItem={({ item }) => (
                                 <View>
