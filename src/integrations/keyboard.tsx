@@ -238,9 +238,13 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             }
         }
 
-        const newTopItemInset = Math.max(0, state.scrollLength - contentBelowTopItem);
+        const calculatedInset = Math.max(0, state.scrollLength - contentBelowTopItem);
+        // On Android, only allow the inset to grow (never shrink) to prevent layout
+        // shifts when content grows. The inset resets when topItemIndex changes/clears.
+        const currentInset = topItemInset.get();
+        const newTopItemInset = isAndroid ? Math.max(currentInset, calculatedInset) : calculatedInset;
 
-        if (topItemInset.get() !== newTopItemInset) {
+        if (currentInset !== newTopItemInset) {
             topItemInset.set(newTopItemInset);
             if (isAndroid) {
                 setTopItemInsetState(newTopItemInset);
