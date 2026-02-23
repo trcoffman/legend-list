@@ -134,39 +134,12 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
         [onScrollCallback],
     );
 
-    // Keep internal offset tracking and still honor user-provided onScroll callbacks/handlers.
-    const scrollHandler = useAnimatedScrollHandler(
-        (event) => {
-            if (animationMode.get() !== "running" || didInteractive.get()) {
-                scrollOffsetY.set(event.contentOffset[horizontal ? "x" : "y"]);
-            }
-            if (onScrollCallback) {
-                if (onScrollCallbackIsWorklet) {
-                    onScrollCallback(event);
-                } else {
-                    runOnJS(onScrollCallback)(event);
-                }
-            }
-        },
-        [horizontal, onScrollCallback, onScrollCallbackIsWorklet],
-    );
-    const composedScrollHandler = useComposedEventHandler([
-        scrollHandler as ScrollHandlerProcessed<Record<string, unknown>>,
-        onScrollProcessed as ScrollHandlerProcessed<Record<string, unknown>> | null,
-    ]);
-    const finalScrollHandler = onScrollProcessed ? composedScrollHandler : scrollHandler;
-
-    const setScrollProcessingEnabled = useCallback(
-        (enabled: boolean) => refLegendList.current?.setScrollProcessingEnabled(enabled),
-        [refLegendList],
-    );
-
     const reportContentInset = useCallback(
         (bottom: number) => refLegendList.current?.reportContentInset({ bottom }),
         [refLegendList],
     );
 
-    const calculateTopItemInset = useCallback(() => {
+    const calculateTopItemInset = useCallback((allowShrink = false) => {
         if (topItemIndex === undefined || topItemIndex < 0) {
             if (topItemInset.get() !== 0) {
                 topItemInset.set(0);
@@ -191,9 +164,10 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
 
         const calculatedInset = Math.max(0, state.scrollLength - contentBelowTopItem);
         const currentInset = topItemInset.get();
-        // On Android, only allow the inset to grow (never shrink) to prevent layout
-        // shifts when content grows. The inset resets when topItemIndex changes/clears.
-        const newTopItemInset = Math.max(currentInset, calculatedInset);
+        // During streaming, only allow the inset to grow to prevent layout shifts.
+        // When allowShrink is true (e.g. on scroll start), use the exact value so the
+        // user cannot scroll past the actual content.
+        const newTopItemInset = allowShrink ? calculatedInset : Math.max(currentInset, calculatedInset);
 
         if (currentInset !== newTopItemInset) {
             topItemInset.set(newTopItemInset);
@@ -215,6 +189,48 @@ export const KeyboardAvoidingLegendList = (forwardRef as TypedForwardRef)(functi
             calculateTopItemInset();
         });
     }, [calculateTopItemInset]);
+
+    // On scroll start, immediately reset the inset to the exact value (allowing it to shrink)
+    // so the user cannot scroll past the actual content.
+    const resetTopItemInset = useCallback(() => {
+        if (pendingTopItemRaf.current !== null) {
+            cancelAnimationFrame(pendingTopItemRaf.current);
+            pendingTopItemRaf.current = null;
+        }
+        calculateTopItemInset(true);
+    }, [calculateTopItemInset]);
+
+    // Keep internal offset tracking and still honor user-provided onScroll callbacks/handlers.
+    const scrollHandler = useAnimatedScrollHandler(
+        {
+            onScroll: (event) => {
+                if (animationMode.get() !== "running" || didInteractive.get()) {
+                    scrollOffsetY.set(event.contentOffset[horizontal ? "x" : "y"]);
+                }
+                if (onScrollCallback) {
+                    if (onScrollCallbackIsWorklet) {
+                        onScrollCallback(event);
+                    } else {
+                        runOnJS(onScrollCallback)(event);
+                    }
+                }
+            },
+            onBeginDrag: () => {
+                runOnJS(resetTopItemInset)();
+            },
+        },
+        [horizontal, onScrollCallback, onScrollCallbackIsWorklet, resetTopItemInset],
+    );
+    const composedScrollHandler = useComposedEventHandler([
+        scrollHandler as ScrollHandlerProcessed<Record<string, unknown>>,
+        onScrollProcessed as ScrollHandlerProcessed<Record<string, unknown>> | null,
+    ]);
+    const finalScrollHandler = onScrollProcessed ? composedScrollHandler : scrollHandler;
+
+    const setScrollProcessingEnabled = useCallback(
+        (enabled: boolean) => refLegendList.current?.setScrollProcessingEnabled(enabled),
+        [refLegendList],
+    );
 
     const updateScrollMetrics = useCallback(() => {
         // Metrics are captured in shared values because worklets cannot call getState().
