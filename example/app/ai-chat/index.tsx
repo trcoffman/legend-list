@@ -266,9 +266,13 @@ This makes it possible to scroll through thousands of items without performance 
                                     }
                                     // This scheme to try and not have to use a timeout to scroll down didn't
                                     // work on android and we still needed a timeout
-                                    setTimeout(() => {
+                                    if (Platform.OS === "android") {
+                                        setTimeout(() => {
+                                            listRef.current?.scrollToEnd({ animated: true });
+                                        }, 400);
+                                    } else {
                                         listRef.current?.scrollToEnd({ animated: true });
-                                    }, 400);
+                                    }
                                 }
                             }}
                             onKeyboardTransitionEnd={handleKeyboardTransitionEnd}
