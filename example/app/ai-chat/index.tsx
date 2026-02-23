@@ -256,6 +256,11 @@ This makes it possible to scroll through thousands of items without performance 
                             onItemSizeChanged={(info) => {
                                 if (scrollToEndOnMeasureRef.current) {
                                     scrollToEndOnMeasureRef.current = false;
+                                    if (Platform.OS === "web") {
+                                        return;
+                                    }
+                                    // This scheme to try and not have to use a timeout to scroll down didn't
+                                    // work on android and we still needed a timeout
                                     setTimeout(() => {
                                         listRef.current?.scrollToEnd({ animated: true });
                                     }, 400);
