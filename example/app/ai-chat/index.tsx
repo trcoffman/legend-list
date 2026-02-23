@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     },
     list: {
         flex: 1,
-        overflow: "visible",
+        overflow: Platform.OS === "web" ? undefined : "visible",
     },
     messageContainer: {
         borderRadius: 16,
