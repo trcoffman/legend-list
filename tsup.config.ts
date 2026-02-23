@@ -19,6 +19,8 @@ const webEntryPoints: Record<string, string> = {
 const nativeEntryPoints = {
     animated: "src/integrations/animated.tsx",
     keyboard: "src/integrations/keyboard.tsx",
+    "keyboard.android": "src/integrations/keyboard.android.tsx",
+    "keyboard.ios": "src/integrations/keyboard.ios.tsx",
     "keyboard-controller": "src/integrations/keyboard-controller.tsx",
     "list-react-native": "src/react-native.ts",
     reanimated: "src/integrations/reanimated.tsx",
