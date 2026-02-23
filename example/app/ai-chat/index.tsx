@@ -24,6 +24,7 @@ const AIChat = () => {
     const [inputText, setInputText] = useState("");
     const [inputHeight, setInputHeight] = useState(0);
     const [topItemIndex, setTopItemIndex] = useState<number | undefined>(undefined);
+    const [isStreaming, setIsStreaming] = useState(false);
     const pendingMessageRef = useRef<string | null>(null);
     const scrollToEndOnMeasureRef = useRef(false);
     const listRef = useRef<LegendListRef>(null);
@@ -143,6 +144,7 @@ const AIChat = () => {
             );
 
             // Stream words - only update the message with matching ID
+            setIsStreaming(true);
             const streamInterval = setInterval(() => {
                 if (currentWordIndex < words.length) {
                     const currentText = words.slice(0, currentWordIndex + 1).join(" ");
@@ -152,6 +154,7 @@ const AIChat = () => {
                     currentWordIndex++;
                 } else {
                     clearInterval(streamInterval);
+                    setIsStreaming(false);
                 }
             }, 30);
         }, 5000);
@@ -219,6 +222,7 @@ This makes it possible to scroll through thousands of items without performance 
             );
 
             // Start streaming words - only update the message with matching ID
+            setIsStreaming(true);
             const streamInterval = setInterval(() => {
                 if (currentWordIndex < words.length) {
                     const currentText = words.slice(0, currentWordIndex + 1).join(" ");
@@ -230,6 +234,7 @@ This makes it possible to scroll through thousands of items without performance 
                     currentWordIndex++;
                 } else {
                     clearInterval(streamInterval);
+                    setIsStreaming(false);
                 }
             }, 1);
         }, 1500);
@@ -251,7 +256,7 @@ This makes it possible to scroll through thousands of items without performance 
                             data={messages}
                             initialScrollAtEnd
                             keyExtractor={(_item, index) => `item-${index}`}
-                            maintainScrollAtEnd={Platform.OS === "web"}
+                            maintainScrollAtEnd={Platform.OS !== "web" && !isStreaming}
                             maintainVisibleContentPosition
                             onItemSizeChanged={(info) => {
                                 if (scrollToEndOnMeasureRef.current) {
