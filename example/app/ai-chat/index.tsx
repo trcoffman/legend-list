@@ -63,7 +63,7 @@ const AIChat = () => {
         // Simulate AI response
         setTimeout(() => {
             simulateAIResponse(text);
-        }, 800);
+        }, 1200);
     };
 
     const sendMessage = () => {
@@ -157,7 +157,7 @@ const AIChat = () => {
                     setIsStreaming(false);
                 }
             }, 30);
-        }, 5000);
+        }, 500);
     };
 
     useEffect(() => {
