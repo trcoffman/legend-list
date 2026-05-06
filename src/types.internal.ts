@@ -12,6 +12,7 @@ import type {
     NativeScrollEvent,
     NativeSyntheticEvent,
     ScrollIndexWithOffsetAndContentOffset,
+    SharedValueLike,
     ViewabilityConfigCallbackPairs,
 } from "@/types.base";
 import type { StylesAsSharedValue } from "@/typesInternal";
@@ -245,6 +246,7 @@ export interface InternalState {
         dataVersion: Key | undefined;
         drawDistance: number;
         estimatedItemSize: number | undefined;
+        extraContentPadding: SharedValueLike<number> | undefined;
         getEstimatedItemSize: LegendListPropsInternal["getEstimatedItemSize"];
         getFixedItemSize: LegendListPropsInternal["getFixedItemSize"];
         getItemType: LegendListPropsInternal["getItemType"];

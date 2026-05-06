@@ -10,6 +10,16 @@ export interface Insets {
     right: number;
 }
 
+/**
+ * Minimal shape of a Reanimated-style shared value that can be read from the
+ * JS thread. This avoids a hard dependency on `react-native-reanimated` from
+ * the core list.
+ */
+export interface SharedValueLike<T> {
+    value: T;
+    get?: () => T;
+}
+
 export interface LayoutRectangle {
     x: number;
     y: number;
@@ -121,6 +131,19 @@ interface LegendListSpecificProps<ItemT, TItemType extends string | undefined> {
      * @default undefined
      */
     estimatedListSize?: { height: number; width: number };
+
+    /**
+     * Extra padding (in pixels) applied below the scrollable content by an
+     * external component — for example, the composer area in a chat UI that
+     * sits above the list via `contentInset`/`bottomPadding`.
+     *
+     * Pass a Reanimated-style shared value (or any object with a `.value`
+     * number) so the list can include it when computing the total content
+     * size. This makes `initialScrollAtEnd`, end-alignment math, and the
+     * various content-size-based calculations account for that padding so
+     * the last item isn't obscured by the overlay.
+     */
+    extraContentPadding?: SharedValueLike<number>;
 
     /**
      * Extra data to trigger re-rendering when changed.

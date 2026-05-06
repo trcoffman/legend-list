@@ -156,6 +156,7 @@ export const KeyboardChatLegendList = typedForwardRef(function KeyboardChatLegen
     return (
         <AnimatedLegendListInternal
             anchoredEndSpace={anchoredEndSpaceWithBlankSpace}
+            extraContentPadding={extraContentPadding}
             ref={combinedRef}
             renderScrollComponent={memoList}
             {...rest}
