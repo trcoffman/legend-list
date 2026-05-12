@@ -114,6 +114,27 @@ const AILegendListChat = () => {
 
     const { contentInsetEndAdjustment, onComposerLayout } = useKeyboardChatComposerInset(listRef, composerRef, 120);
 
+    const renderItem = useCallback(
+        ({ item }: { item: Message }) => (
+            <View>
+                {item.sender === "user" ? (
+                    <Animated.View
+                        entering={item.isNew ? FadeIn.duration(1000) : undefined}
+                        style={[styles.messageContainer, styles.userMessageContainer, styles.userStyle]}
+                    >
+                        <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
+                        <View style={[styles.timeStamp, styles.userStyle]}>
+                            <Text style={styles.timeStampText}>{new Date(item.timeStamp).toLocaleTimeString()}</Text>
+                        </View>
+                    </Animated.View>
+                ) : (
+                    <AIResponse isPlaceholder={!!item.isPlaceholder} text={item.text} timeStamp={item.timeStamp} />
+                )}
+            </View>
+        ),
+        []
+    );
+
     useEffect(() => {
         const state = listRef.current?.getState();
         if (!state) {
@@ -159,7 +180,7 @@ const AILegendListChat = () => {
         requestAnimationFrame(() => {
             if (Platform.OS === "android") {
                 // Android seems to need a small timeout
-                schedule(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+                schedule(() => listRef.current?.scrollToEnd({ animated: true }), 200);
             } else {
                 listRef.current?.scrollToEnd({ animated: true });
             }
@@ -257,29 +278,7 @@ const AILegendListChat = () => {
                         maintainScrollAtEnd={!anchorEndSpaceEnabled}
                         recycleItems
                         ref={listRef}
-                        renderItem={({ item }) => (
-                            <View>
-                                {item.sender === "user" ? (
-                                    <Animated.View
-                                        entering={item.isNew ? FadeIn.duration(1000) : undefined}
-                                        style={[styles.messageContainer, styles.userMessageContainer, styles.userStyle]}
-                                    >
-                                        <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
-                                        <View style={[styles.timeStamp, styles.userStyle]}>
-                                            <Text style={styles.timeStampText}>
-                                                {new Date(item.timeStamp).toLocaleTimeString()}
-                                            </Text>
-                                        </View>
-                                    </Animated.View>
-                                ) : (
-                                    <AIResponse
-                                        isPlaceholder={!!item.isPlaceholder}
-                                        text={item.text}
-                                        timeStamp={item.timeStamp}
-                                    />
-                                )}
-                            </View>
-                        )}
+                        renderItem={renderItem}
                         scrollIndicatorInsets={{ bottom: -insets.bottom }}
                         style={styles.list}
                     />
