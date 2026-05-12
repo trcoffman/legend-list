@@ -165,7 +165,9 @@ const AILegendListChat = () => {
     }, []);
 
     const doSendMessage = (text: string, rawInput: string) => {
-        setAnchorAtStartIndex(messages.length);
+        if (anchorEndSpaceEnabled) {
+            setAnchorAtStartIndex(messages.length);
+        }
 
         setMessages((prevMessages) => [
             ...prevMessages,
