@@ -127,6 +127,7 @@ const AILegendListChat = () => {
     const [isStreaming, setIsStreaming] = useState(false);
     const [liftBehavior, setLiftBehavior] = useState<LiftBehavior>("whenAtEnd");
     const [anchorAtStartIndex, setAnchorAtStartIndex] = useState<number | undefined>(undefined);
+    const [anchorEndSpaceEnabled, setAnchorEndSpaceEnabled] = useState(false);
     const listRef = useRef<LegendListRef>(null);
     const inputRef = useRef<TextInput>(null);
     const composerRef = useRef<View>(null);
@@ -134,6 +135,20 @@ const AILegendListChat = () => {
     const insets = useSafeAreaInsets();
 
     const { contentInsetEndAdjustment, onComposerLayout } = useKeyboardChatComposerInset(listRef, composerRef, 120);
+
+    const onItemSizeChanged = useCallback(() => {
+        if (anchorEndSpaceEnabled) {
+            return;
+        }
+        const state = listRef.current?.getState();
+        let sum = 0;
+        state?.sizes.forEach((size) => {
+            sum += size;
+        });
+        if (state && sum > state.scrollLength + contentInsetEndAdjustment.value) {
+            setAnchorEndSpaceEnabled(true);
+        }
+    }, [contentInsetEndAdjustment]);
 
     const schedule = useCallback((fn: () => void, ms: number) => {
         const id = setTimeout(fn, ms);
@@ -217,7 +232,7 @@ const AILegendListChat = () => {
                 const currentText = words.slice(0, currentWordIndex).join(" ");
 
                 setMessages((prevMessages) =>
-                    prevMessages.map((msg) => (msg.id === aiMessageId ? { ...msg, text: currentText } : msg)),
+                    prevMessages.map((msg) => (msg.id === aiMessageId ? { ...msg, text: currentText } : msg))
                 );
             } else {
                 clearInterval(intervalId);
@@ -249,16 +264,19 @@ const AILegendListChat = () => {
                 <KeyboardGestureArea interpolator="ios" offset={60} style={styles.container}>
                     <KeyboardChatLegendList
                         anchoredEndSpace={
-                            anchorAtStartIndex !== undefined ? { anchorIndex: anchorAtStartIndex } : undefined
+                            anchorEndSpaceEnabled && anchorAtStartIndex !== undefined
+                                ? { anchorIndex: anchorAtStartIndex }
+                                : undefined
                         }
                         contentContainerStyle={styles.contentContainer}
-                        contentInsetEndAdjustment={contentInsetEndAdjustment}
+                        contentInsetEndAdjustment={anchorEndSpaceEnabled ? contentInsetEndAdjustment : undefined}
                         data={messages}
                         initialScrollAtEnd
                         keyboardLiftBehavior={liftBehavior}
                         keyboardOffset={insets.bottom}
                         keyExtractor={(_item, index) => `item-${index}`}
                         maintainVisibleContentPosition
+                        onItemSizeChanged={onItemSizeChanged}
                         recycleItems
                         ref={listRef}
                         renderItem={({ item }) => (
@@ -288,7 +306,10 @@ const AILegendListChat = () => {
                         style={styles.list}
                     />
                 </KeyboardGestureArea>
-                <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }} style={styles.composerWrapper}>
+                <KeyboardStickyView
+                    offset={{ closed: 0, opened: insets.bottom }}
+                    style={anchorEndSpaceEnabled ? styles.composerWrapper : undefined}
+                >
                     <View
                         onLayout={onComposerLayout}
                         ref={composerRef}
